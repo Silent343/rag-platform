@@ -6,7 +6,8 @@ document, and answer a question grounded in the stored documents.
 
 import uuid
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.services.document_loader import DocumentLoader
 from app.services.chunker import TextChunker
@@ -114,8 +115,10 @@ class RagService:
         context = self._build_context(matches)
         prompt = _PROMPT_TEMPLATE.format(context=context, question=question)
 
-        model = genai.GenerativeModel(self._chat_model)
-        response = model.generate_content(prompt)
+        response = self._embeddings._client.models.generate_content(
+            model=self._chat_model,
+            contents=prompt,
+        )
 
         return {"answer": response.text.strip(), "sources": matches}
 

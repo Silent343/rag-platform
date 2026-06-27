@@ -5,6 +5,8 @@ Embeddings let us measure semantic similarity: the question and the chunks that
 answer it land close together in vector space, even when they share no words.
 """
 
+from google import genai
+from google.genai import types
 import google.generativeai as genai
 
 
@@ -22,7 +24,7 @@ class GeminiEmbeddingService:
             api_key: The Gemini API key.
             model: The embedding model id (e.g. ``text-embedding-004``).
         """
-        genai.configure(api_key=api_key)
+        self._client = genai.Client(api_key=api_key)
         self._model = model
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
@@ -37,12 +39,12 @@ class GeminiEmbeddingService:
         """
         vectors: list[list[float]] = []
         for text in texts:
-            result = genai.embed_content(
+            result = self._client.models.embed_content(
                 model=self._model,
-                content=text,
-                task_type=self._DOCUMENT_TASK,
+                contents=text,
+                config=types.EmbedContentConfig(task_type=self._DOCUMENT_TASK),
             )
-            vectors.append(result["embedding"])
+            vectors.append(result.embeddings[0].values)
         return vectors
 
     def embed_query(self, text: str) -> list[float]:
@@ -55,9 +57,9 @@ class GeminiEmbeddingService:
         Returns:
             The query's embedding vector.
         """
-        result = genai.embed_content(
+        result = self._client.models.embed_content(
             model=self._model,
-            content=text,
-            task_type=self._QUERY_TASK,
+            contents=text,
+            config=types.EmbedContentConfig(task_type=self._QUERY_TASK),
         )
-        return result["embedding"]
+        return result.embeddings[0].values
