@@ -4,10 +4,6 @@ import hashlib
 import uuid
 
 from google import genai
-<<<<<<< HEAD
-=======
-from google.genai import types
->>>>>>> 3970a87806e1d9393c5cf7ec6f3b7e0d2c5f37b5
 
 from app.errors import ProviderError
 from app.services.chunker import TextChunker
@@ -35,7 +31,17 @@ _NOT_FOUND = "I could not find the answer in the provided documents."
 class RagService:
     """High-level Retrieval-Augmented Generation service."""
 
-    def __init__(self, loader: DocumentLoader, chunker: TextChunker, embeddings: GeminiEmbeddingService, store: VectorStore, api_key: str, chat_model: str, top_k: int, min_similarity: float) -> None:
+    def __init__(
+        self,
+        loader: DocumentLoader,
+        chunker: TextChunker,
+        embeddings: GeminiEmbeddingService,
+        store: VectorStore,
+        api_key: str,
+        chat_model: str,
+        top_k: int,
+        min_similarity: float,
+    ) -> None:
         self._loader = loader
         self._chunker = chunker
         self._embeddings = embeddings
@@ -49,7 +55,12 @@ class RagService:
         content_hash = hashlib.sha256(content).hexdigest()
         existing = self._store.find_document_by_hash(content_hash)
         if existing:
-            return {"document_id": existing["document_id"], "filename": existing["filename"], "chunks_created": 0, "already_indexed": True}
+            return {
+                "document_id": existing["document_id"],
+                "filename": existing["filename"],
+                "chunks_created": 0,
+                "already_indexed": True,
+            }
 
         chunks = [
             {"text": chunk, "page_number": page_number}
@@ -58,48 +69,59 @@ class RagService:
         ]
         if not chunks:
             raise ValueError("No text could be extracted from the document.")
+
         try:
             vectors = self._embeddings.embed_documents([chunk["text"] for chunk in chunks])
         except Exception as exc:
-            raise ProviderError("Gemini could not index this document. Please try again.") from exc
+            raise ProviderError(
+                "Gemini could not index this document. Please try again."
+            ) from exc
 
         document_id = str(uuid.uuid4())
         self._store.add_chunks(document_id, filename, content_hash, chunks, vectors)
-        return {"document_id": document_id, "filename": filename, "chunks_created": len(chunks), "already_indexed": False}
+        return {
+            "document_id": document_id,
+            "filename": filename,
+            "chunks_created": len(chunks),
+            "already_indexed": False,
+        }
 
     def answer(self, question: str) -> dict:
         try:
             query_vector = self._embeddings.embed_query(question)
         except Exception as exc:
-            raise ProviderError("Gemini could not process the question. Please try again.") from exc
+            raise ProviderError(
+                "Gemini could not process the question. Please try again."
+            ) from exc
 
-        matches = [match for match in self._store.query(query_vector, self._top_k) if match["score"] >= self._min_similarity]
+        matches = [
+            match
+            for match in self._store.query(query_vector, self._top_k)
+            if match["score"] >= self._min_similarity
+        ]
         if not matches:
-<<<<<<< HEAD
             return {"answer": _NOT_FOUND, "sources": []}
-=======
-            return {
-                "answer": "I could not find the answer in the provided documents.",
-                "sources": [],
-            }
-
-        context = self._build_context(matches)
-        prompt = _PROMPT_TEMPLATE.format(context=context, question=question)
-
-        response = self._embeddings._client.models.generate_content(
-            model=self._chat_model,
-            contents=prompt,
-        )
->>>>>>> 3970a87806e1d9393c5cf7ec6f3b7e0d2c5f37b5
 
         try:
-            response = self._client.models.generate_content(model=self._chat_model, contents=_PROMPT_TEMPLATE.format(context=self._build_context(matches), question=question))
+            response = self._client.models.generate_content(
+                model=self._chat_model,
+                contents=_PROMPT_TEMPLATE.format(
+                    context=self._build_context(matches),
+                    question=question,
+                ),
+            )
         except Exception as exc:
-            raise ProviderError("Gemini could not generate an answer. Please try again.") from exc
+            raise ProviderError(
+                "Gemini could not generate an answer. Please try again."
+            ) from exc
+
         if not response.text:
             raise ProviderError("Gemini returned an empty answer. Please try again.")
         return {"answer": response.text.strip(), "sources": matches}
 
     @staticmethod
     def _build_context(matches: list[dict]) -> str:
-        return "\n\n---\n\n".join(f"[Source: {match['filename']}, page {match['page_number']}]\n{match['text']}" for match in matches)
+        return "\n\n---\n\n".join(
+            f"[Source: {match['filename']}, page {match['page_number']}]\n{match['text']}"
+            for match in matches
+        )
