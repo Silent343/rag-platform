@@ -1,57 +1,45 @@
-"""
-Document loading: extracts plain text from uploaded files.
-
-Supports PDF (via pypdf) and plain-text files. The extracted text is handed to
-the chunker downstream.
-"""
+"""Document loading with page-aware PDF extraction."""
 
 from io import BytesIO
 
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 
 class DocumentLoader:
-    """Extracts text content from raw uploaded file bytes."""
+    """Extracts page-labelled text content from uploaded files."""
 
-    @staticmethod
-    def extract_text(filename: str, content: bytes) -> str:
-        """
-        Extracts text from a file based on its extension.
+    def __init__(self, max_pdf_pages: int) -> None:
+        self._max_pdf_pages = max_pdf_pages
 
-        Args:
-            filename: The original file name (used to detect the type).
-            content: The raw file bytes.
-
-        Returns:
-            The extracted text.
-
-        Raises:
-            ValueError: If the file type is unsupported or the file is empty.
-        """
+    def extract_pages(self, filename: str, content: bytes) -> list[tuple[int, str]]:
         if not content:
             raise ValueError("The uploaded file is empty.")
-
         lowered = filename.lower()
         if lowered.endswith(".pdf"):
-            return DocumentLoader._extract_pdf(content)
+            return self._extract_pdf_pages(content)
         if lowered.endswith((".txt", ".md")):
-            return content.decode("utf-8", errors="ignore")
+            text = content.decode("utf-8", errors="ignore").strip()
+            if not text:
+                raise ValueError("No text could be extracted from the document.")
+            return [(1, text)]
+        raise ValueError(f"Unsupported file type: {filename}. Allowed: .pdf, .txt, .md.")
 
-        raise ValueError(
-            f"Unsupported file type: {filename}. Allowed: .pdf, .txt, .md."
-        )
+    def extract_text(self, filename: str, content: bytes) -> str:
+        return "\n\n".join(text for _, text in self.extract_pages(filename, content))
 
-    @staticmethod
-    def _extract_pdf(content: bytes) -> str:
-        """
-        Extracts and concatenates the text of every page in a PDF.
-
-        Args:
-            content: The raw PDF bytes.
-
-        Returns:
-            The full document text, with pages separated by blank lines.
-        """
-        reader = PdfReader(BytesIO(content))
-        pages = [page.extract_text() or "" for page in reader.pages]
-        return "\n\n".join(pages).strip()
+    def _extract_pdf_pages(self, content: bytes) -> list[tuple[int, str]]:
+        try:
+            reader = PdfReader(BytesIO(content))
+        except PdfReadError as exc:
+            raise ValueError("The PDF could not be read. It may be damaged or encrypted.") from exc
+        if len(reader.pages) > self._max_pdf_pages:
+            raise ValueError(f"PDFs can contain at most {self._max_pdf_pages} pages.")
+        pages = [
+            (number, text)
+            for number, page in enumerate(reader.pages, start=1)
+            if (text := (page.extract_text() or "").strip())
+        ]
+        if not pages:
+            raise ValueError("No text could be extracted from the PDF.")
+        return pages

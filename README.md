@@ -6,7 +6,7 @@ hacés preguntas, y un LLM responde **citando las fuentes** — sin inventar.
 ## Cómo funciona (el flujo RAG)
 
 **Ingesta:** PDF/TXT → extraer texto → partir en chunks con overlap →
-embeddings (Gemini) → guardar vectores en ChromaDB.
+embeddings (Gemini Embedding 2) → guardar vectores en ChromaDB.
 
 **Query:** pregunta → embedding → buscar los chunks más similares →
 armar prompt con ese contexto → Gemini responde solo desde el contexto.
@@ -70,3 +70,11 @@ El prompt (`rag_service.py`) instruye al modelo a responder SOLO desde el
 contexto y a decir explícitamente "I could not find the answer..." cuando la
 respuesta no está en los documentos. Eso es el corazón de un RAG: la respuesta
 viene de tus documentos, no del conocimiento general del modelo.
+
+## Actualización de Gemini
+
+El backend usa el SDK actual `google-genai`, con `gemini-3.5-flash` para respuestas y `gemini-embedding-2` para búsqueda. Los vectores de `gemini-embedding-001` no son compatibles con el modelo nuevo, por lo que se usa la colección `documents_gemini_embedding_2`. Volvé a subir los documentos para indexarlos allí; la colección antigua no se elimina.
+
+## Production and Render
+
+See [DEPLOYMENT.md](../DEPLOYMENT.md) for the Render Blueprint, required environment variables, and the persistent ChromaDB disk configuration.
