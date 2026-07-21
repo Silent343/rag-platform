@@ -4,7 +4,6 @@ services:
     name: document-rag-api
     region: oregon
     plan: free
-    rootDir: rag-platform
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -35,16 +34,6 @@ services:
       - key: RATE_LIMIT_WINDOW_SECONDS
         value: "60"
       - key: CORS_ORIGINS
-        value: https://document-rag-web.onrender.com
+        value: http://localhost:4200
       - key: ENABLE_DOCS
         value: "false"
-
-  - type: web
-    runtime: static
-    name: document-rag-web
-    rootDir: rag-frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist/rag-frontend/browser
-    autoDeploy: true
-
-
