@@ -3,16 +3,12 @@ services:
     runtime: python
     name: document-rag-api
     region: oregon
-    plan: starter
+    plan: free
     rootDir: rag-backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: true
-    disk:
-      name: chroma-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: GEMINI_API_KEY
         sync: false
@@ -23,7 +19,7 @@ services:
       - key: GEMINI_EMBED_DIMENSIONS
         value: "768"
       - key: CHROMA_DIR
-        value: /var/data/chroma
+        value: /tmp/chroma
       - key: COLLECTION_NAME
         value: documents_gemini_embedding_2_v2
       - key: MIN_SIMILARITY
@@ -50,3 +46,5 @@ services:
     buildCommand: npm ci && npm run build
     staticPublishPath: dist/rag-frontend/browser
     autoDeploy: true
+
+
