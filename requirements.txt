@@ -3,6 +3,10 @@ uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 pydantic==2.10.4
 pydantic-settings==2.7.1
+<<<<<<< HEAD
 google-genai>=2.0.0
+=======
+google-genai>=1.0.0
+>>>>>>> 3970a87806e1d9393c5cf7ec6f3b7e0d2c5f37b5
 chromadb==0.6.3
 pypdf==5.1.0

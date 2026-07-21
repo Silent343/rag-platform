@@ -1,0 +1,52 @@
+services:
+  - type: web
+    runtime: python
+    name: document-rag-api
+    region: oregon
+    plan: starter
+    rootDir: rag-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: chroma-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_CHAT_MODEL
+        value: gemini-3.5-flash
+      - key: GEMINI_EMBED_MODEL
+        value: gemini-embedding-2
+      - key: GEMINI_EMBED_DIMENSIONS
+        value: "768"
+      - key: CHROMA_DIR
+        value: /var/data/chroma
+      - key: COLLECTION_NAME
+        value: documents_gemini_embedding_2_v2
+      - key: MIN_SIMILARITY
+        value: "0.4"
+      - key: MAX_UPLOAD_BYTES
+        value: "10485760"
+      - key: MAX_PDF_PAGES
+        value: "100"
+      - key: MAX_QUESTION_CHARS
+        value: "2000"
+      - key: RATE_LIMIT_REQUESTS
+        value: "30"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+      - key: CORS_ORIGINS
+        value: https://document-rag-web.onrender.com
+      - key: ENABLE_DOCS
+        value: "false"
+
+  - type: web
+    runtime: static
+    name: document-rag-web
+    rootDir: rag-frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist/rag-frontend/browser
+    autoDeploy: true

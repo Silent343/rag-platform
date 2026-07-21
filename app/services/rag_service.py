@@ -4,6 +4,10 @@ import hashlib
 import uuid
 
 from google import genai
+<<<<<<< HEAD
+=======
+from google.genai import types
+>>>>>>> 3970a87806e1d9393c5cf7ec6f3b7e0d2c5f37b5
 
 from app.errors import ProviderError
 from app.services.chunker import TextChunker
@@ -71,7 +75,22 @@ class RagService:
 
         matches = [match for match in self._store.query(query_vector, self._top_k) if match["score"] >= self._min_similarity]
         if not matches:
+<<<<<<< HEAD
             return {"answer": _NOT_FOUND, "sources": []}
+=======
+            return {
+                "answer": "I could not find the answer in the provided documents.",
+                "sources": [],
+            }
+
+        context = self._build_context(matches)
+        prompt = _PROMPT_TEMPLATE.format(context=context, question=question)
+
+        response = self._embeddings._client.models.generate_content(
+            model=self._chat_model,
+            contents=prompt,
+        )
+>>>>>>> 3970a87806e1d9393c5cf7ec6f3b7e0d2c5f37b5
 
         try:
             response = self._client.models.generate_content(model=self._chat_model, contents=_PROMPT_TEMPLATE.format(context=self._build_context(matches), question=question))
